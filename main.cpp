@@ -9,8 +9,6 @@ using namespace std;
 
 //s, d, b, f
 
-void readAll(FILE *stream, string *result);
-
 void handleTemplate(va_list *argsList, string *input, unsigned int* cursor, char templateKey);
 
 int nextInt(string *input, unsigned int* cursor);
@@ -21,16 +19,15 @@ bool nextBool(string *input, unsigned int* cursor);
 
 int main() {
     const char *format = "%d %s %b\0";
-    FILE *stream = fopen("/home/andrew/test", "r");
     int a = 0;
     string b;
     bool c = false;
-    fscanf(stream, format, &a, &b, &c);
+    sscanf("12 sfdf true", format, &a, &b, &c);
     printf("%d %s %s", a, b.c_str(), c ? "true" : "false");
     return 0;
 }
 
-int fscanf(FILE *stream, const char *format, ...) {
+int sscanf(const char* input, const char *format, ...) {
     int keysCount = 0;
     for (int i = 0; format[i] != '\0'; i++) {
         if (format[i] == '%') keysCount++;
@@ -46,15 +43,13 @@ int fscanf(FILE *stream, const char *format, ...) {
     va_list argsList;
     va_start(argsList, format);
 
-    string input;
+    string inputStr = string(input);
     unsigned int cursor = 0;
-    readAll(stream, &input);
-    printf("input is: %s", input.c_str());
 
     for (int i = 0; format[i] != '\0'; i++) {
         if (format[i] == '%') {
             i++;
-            handleTemplate(&argsList, &input, &cursor, format[i]);
+            handleTemplate(&argsList, &inputStr, &cursor, format[i]);
         } else if (format[i] == input[cursor]) {
             cursor++;
         } else exit(2);
@@ -114,12 +109,4 @@ bool nextBool(string *input, unsigned int* cursor) {
         *cursor = *cursor + 5;
         return false;
     } else exit(1);
-}
-
-void readAll(FILE *stream, string *result) {
-    int buffer;
-    while ((buffer = fgetc(stream)) != '\0') {
-        if (buffer == EOF) break;
-        *result += (char) buffer;
-    }
 }
