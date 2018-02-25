@@ -17,13 +17,16 @@ int nextInt(string *input, unsigned int* cursor);
 
 void nextString(string *input, unsigned int* cursor, string* result);
 
+bool nextBool(string *input, unsigned int* cursor);
+
 int main() {
-    const char *format = "%d%s\0";
+    const char *format = "%d %s %b\0";
     FILE *stream = fopen("/home/andrew/test", "r");
     int a = 0;
     string b;
-    fscanf(stream, format, &a, &b);
-    printf("%d %s", a, b.c_str());
+    bool c = false;
+    fscanf(stream, format, &a, &b, &c);
+    printf("%d %s %s", a, b.c_str(), c ? "true" : "false");
     return 0;
 }
 
@@ -52,7 +55,9 @@ int fscanf(FILE *stream, const char *format, ...) {
         if (format[i] == '%') {
             i++;
             handleTemplate(&argsList, &input, &cursor, format[i]);
-        }
+        } else if (format[i] == input[cursor]) {
+            cursor++;
+        } else exit(2);
     }
 
     va_end(argsList);
@@ -70,7 +75,7 @@ void handleTemplate(va_list *argsList, string *input, unsigned int* cursor, char
             break;
         }
         case 'b':
-
+            *va_arg(*argsList, bool*) = nextBool(input, cursor);
             break;
         default:
             break;
@@ -98,6 +103,17 @@ void nextString(string *input, unsigned int* cursor, string* result) {
         else break;
         (*cursor)++;
     }
+}
+
+bool nextBool(string *input, unsigned int* cursor) {
+    unsigned long size = input->size() - *cursor + 1;
+    if (size >= 4 && input->substr(*cursor, 4) == "true") {
+        *cursor = *cursor + 4;
+        return true;
+    } else if (size >= 5 && input->substr(*cursor, 5) == "false") {
+        *cursor = *cursor + 5;
+        return false;
+    } else exit(1);
 }
 
 void readAll(FILE *stream, string *result) {
