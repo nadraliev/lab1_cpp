@@ -9,24 +9,26 @@ using namespace std;
 
 //s, d, b, f
 
-void readAll(FILE *stream, string *result);
+void readAll(FILE *stream, char **result);
 
-void handleTemplate(va_list *argsList, string *input, unsigned int* cursor, char templateKey);
+void handleTemplate(va_list *argsList, char *input, unsigned int* cursor, char templateKey);
 
-int nextInt(string *input, unsigned int* cursor);
+int nextInt(char *input, unsigned int* cursor);
 
-void nextString(string *input, unsigned int* cursor, string* result);
+void nextString(char *input, unsigned int* cursor, char** result);
 
-bool nextBool(string *input, unsigned int* cursor);
+bool nextBool(char *input, unsigned int* cursor);
 
 int main() {
-    const char *format = "%d %s %b\0";
+    const char *format = "%d %s %b\n%b\0";
     FILE *stream = fopen("/home/andrew/test", "r");
     int a = 0;
-    string b;
+    char* b;
     bool c = false;
-    fscanf(stream, format, &a, &b, &c);
-    printf("%d %s %s", a, b.c_str(), c ? "true" : "false");
+    bool d = false;
+    fscanf(stream, format, &a, &b, &c, &d);
+    printf("%d %s %s %s", a, b, c ? "true" : "false", d ? "true" : "false");
+    free(b);
     return 0;
 }
 
@@ -46,32 +48,33 @@ int fscanf(FILE *stream, const char *format, ...) {
     va_list argsList;
     va_start(argsList, format);
 
-    string input;
+    char *input;
     unsigned int cursor = 0;
     readAll(stream, &input);
-    printf("input is: %s", input.c_str());
+    printf("input is: %s", input);
 
     for (int i = 0; format[i] != '\0'; i++) {
         if (format[i] == '%') {
             i++;
-            handleTemplate(&argsList, &input, &cursor, format[i]);
+            handleTemplate(&argsList, input, &cursor, format[i]);
         } else if (format[i] == input[cursor]) {
             cursor++;
         } else exit(2);
     }
 
+    free(input);
     va_end(argsList);
 }
 
-void handleTemplate(va_list *argsList, string *input, unsigned int* cursor, char templateKey) {
+void handleTemplate(va_list *argsList, char *input, unsigned int* cursor, char templateKey) {
     switch (templateKey) {
         case 'd':
             *va_arg(*argsList, int*) = nextInt(input, cursor);
             break;
         case 's': {
-            string result;
+            char* result;
             nextString(input, cursor, &result);
-            *va_arg(*argsList, string*) = result;
+            *va_arg(*argsList, char**) = result;
             break;
         }
         case 'b':
@@ -82,44 +85,61 @@ void handleTemplate(va_list *argsList, string *input, unsigned int* cursor, char
     }
 }
 
-int nextInt(string *input, unsigned int* cursor) {
-    string intStr;
-    unsigned long size = input->size() - *cursor;
-    for (unsigned long i = *cursor; i < size; i++) {
-        if (isdigit((*input)[i]) || (i == *cursor && (*input)[i] == '-'))
-            intStr += (*input)[i];
+int nextInt(char *input, unsigned int* cursor) {
+    char intStr[11];
+    int counter = 0;
+    for (unsigned long i = *cursor; i < strlen(input); i++) {
+        if (isdigit(input[i]) || (i == *cursor && input[i] == '-'))
+            intStr[counter++] = input[i];
         else break;
         (*cursor)++;
     }
 
-    return stoi(intStr);
+    return atoi(intStr);
 }
 
-void nextString(string *input, unsigned int* cursor, string* result) {
-    unsigned long size = input->size() - *cursor + 1;
-    for (unsigned long i = *cursor; i < size; i++) {
-        if (!isdigit((*input)[i]) && !isblank((*input)[i]) && !iscntrl((*input)[i]) && !isspace((*input)[i]))
-            *result += (*input)[i];
-        else break;
+void nextString(char *input, unsigned int* cursor, char ** result) {
+    unsigned int startIndex = *cursor;
+    for (unsigned long i = *cursor; i < strlen(input); i++) {
+        if (isdigit(input[i]) || isblank(input[i]) || iscntrl(input[i]) || isspace(input[i]))
+            break;
         (*cursor)++;
     }
+    unsigned int desiredStrSize = *cursor - startIndex;
+    *result = (char *)calloc(1, desiredStrSize + 1);
+    memcpy(*result, input + startIndex, desiredStrSize);
 }
 
-bool nextBool(string *input, unsigned int* cursor) {
-    unsigned long size = input->size() - *cursor + 1;
-    if (size >= 4 && input->substr(*cursor, 4) == "true") {
-        *cursor = *cursor + 4;
-        return true;
-    } else if (size >= 5 && input->substr(*cursor, 5) == "false") {
-        *cursor = *cursor + 5;
-        return false;
+bool nextBool(char *input, unsigned int* cursor) {
+    bool result = false;
+    unsigned long size = strlen(input) - *cursor + 1;
+    if (size >= 4) {
+        char* substr = (char*)calloc(1, 5);
+        memcpy(substr, input + *cursor, 4);
+        if (strcmp(substr, "true") == 0) {
+            *cursor = *cursor + 4;
+            result = true;
+        }
+        free(substr);
+    } else if (size >= 5) {
+        char* substr = (char*)calloc(1, 6);
+        memcpy(substr, input + *cursor, 5);
+        if (strcmp(substr, "false") == 0) {
+            *cursor = *cursor + 5;
+            result = false;
+        }
+        free(substr);
     } else exit(1);
+
+    return result;
 }
 
-void readAll(FILE *stream, string *result) {
-    int buffer;
-    while ((buffer = fgetc(stream)) != '\0') {
-        if (buffer == EOF) break;
-        *result += (char) buffer;
-    }
+void readAll(FILE *stream, char **result) {
+    long lSize;
+    fseek( stream , 0L , SEEK_END);
+    lSize = ftell( stream );
+    rewind( stream );
+    *result = (char *)calloc( 1, lSize+1 );
+    fread( *result , lSize, 1 , stream);
+    fclose(stream);
 }
