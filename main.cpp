@@ -9,15 +9,15 @@ using namespace std;
 
 //s, d, b, f
 
-void readAll(FILE *stream, char **result);
+void read_all(FILE *stream, char **result);
 
-void handleTemplate(va_list *argsList, char *input, unsigned int* cursor, char templateKey);
+void handle_template(va_list *argsList, char *input, unsigned int *cursor, char templateKey);
 
-int nextInt(char *input, unsigned int* cursor);
+int next_int(char *input, unsigned int *cursor);
 
-void nextString(char *input, unsigned int* cursor, char** result);
+void next_string(char *input, unsigned int *cursor, char **result);
 
-bool nextBool(char *input, unsigned int* cursor);
+bool next_bool(char *input, unsigned int *cursor);
 
 int main() {
     const char *format = "%d %s %b\n%b\0";
@@ -50,13 +50,13 @@ int fscanf(FILE *stream, const char *format, ...) {
 
     char *input;
     unsigned int cursor = 0;
-    readAll(stream, &input);
+    read_all(stream, &input);
     printf("input is: %s", input);
 
     for (int i = 0; format[i] != '\0'; i++) {
         if (format[i] == '%') {
             i++;
-            handleTemplate(&argsList, input, &cursor, format[i]);
+            handle_template(&argsList, input, &cursor, format[i]);
         } else if (format[i] == input[cursor]) {
             cursor++;
         } else exit(2);
@@ -66,26 +66,26 @@ int fscanf(FILE *stream, const char *format, ...) {
     va_end(argsList);
 }
 
-void handleTemplate(va_list *argsList, char *input, unsigned int* cursor, char templateKey) {
+void handle_template(va_list *argsList, char *input, unsigned int *cursor, char templateKey) {
     switch (templateKey) {
         case 'd':
-            *va_arg(*argsList, int*) = nextInt(input, cursor);
+            *va_arg(*argsList, int*) = next_int(input, cursor);
             break;
         case 's': {
             char* result;
-            nextString(input, cursor, &result);
+            next_string(input, cursor, &result);
             *va_arg(*argsList, char**) = result;
             break;
         }
         case 'b':
-            *va_arg(*argsList, bool*) = nextBool(input, cursor);
+            *va_arg(*argsList, bool*) = next_bool(input, cursor);
             break;
         default:
             break;
     }
 }
 
-int nextInt(char *input, unsigned int* cursor) {
+int next_int(char *input, unsigned int *cursor) {
     char intStr[11];
     int counter = 0;
     for (unsigned long i = *cursor; i < strlen(input); i++) {
@@ -98,7 +98,7 @@ int nextInt(char *input, unsigned int* cursor) {
     return atoi(intStr);
 }
 
-void nextString(char *input, unsigned int* cursor, char ** result) {
+void next_string(char *input, unsigned int *cursor, char **result) {
     unsigned int startIndex = *cursor;
     for (unsigned long i = *cursor; i < strlen(input); i++) {
         if (isdigit(input[i]) || isblank(input[i]) || iscntrl(input[i]) || isspace(input[i]))
@@ -110,7 +110,7 @@ void nextString(char *input, unsigned int* cursor, char ** result) {
     memcpy(*result, input + startIndex, desiredStrSize);
 }
 
-bool nextBool(char *input, unsigned int* cursor) {
+bool next_bool(char *input, unsigned int *cursor) {
     bool result = false;
     unsigned long size = strlen(input) - *cursor + 1;
     if (size >= 4) {
@@ -134,7 +134,7 @@ bool nextBool(char *input, unsigned int* cursor) {
     return result;
 }
 
-void readAll(FILE *stream, char **result) {
+void read_all(FILE *stream, char **result) {
     long lSize;
     fseek( stream , 0L , SEEK_END);
     lSize = ftell( stream );
