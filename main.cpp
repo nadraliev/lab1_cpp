@@ -11,28 +11,29 @@ using namespace std;
 
 void read_all(FILE *stream, char **result);
 
-void handle_template(va_list *argsList, char *input, unsigned int *cursor, char templateKey);
+void handle_template(va_list *argsList, const char *input, unsigned int *cursor, char templateKey);
 
-int next_int(char *input, unsigned int *cursor);
+int next_int(const char *input, unsigned int *cursor);
 
-void next_string(char *input, unsigned int *cursor, char **result);
+void next_string(const char *input, unsigned int *cursor, char **result);
 
-bool next_bool(char *input, unsigned int *cursor);
+bool next_bool(const char *input, unsigned int *cursor);
+
+void to_lower(char** string);
 
 int main() {
     const char *format = "%d %s %b\n%b\0";
-    FILE *stream = fopen("/home/andrew/test", "r");
     int a = 0;
     char* b;
     bool c = false;
     bool d = false;
-    fscanf(stream, format, &a, &b, &c, &d);
-    printf("%d %s %s %s", a, b, c ? "true" : "false", d ? "true" : "false");
+    sscanf("12 dsf true\nFaLse", format, &a, &b, &c, &d);
+    printf("\n%d %s %s %s", a, b, c ? "true" : "false", d ? "true" : "false");
     free(b);
     return 0;
 }
 
-int fscanf(FILE *stream, const char *format, ...) {
+int sscanf(const char* input, const char *format, ...) {
     int keysCount = 0;
     for (int i = 0; format[i] != '\0'; i++) {
         if (format[i] == '%') keysCount++;
@@ -48,9 +49,7 @@ int fscanf(FILE *stream, const char *format, ...) {
     va_list argsList;
     va_start(argsList, format);
 
-    char *input;
     unsigned int cursor = 0;
-    read_all(stream, &input);
     printf("input is: %s", input);
 
     for (int i = 0; format[i] != '\0'; i++) {
@@ -62,11 +61,10 @@ int fscanf(FILE *stream, const char *format, ...) {
         } else exit(2);
     }
 
-    free(input);
     va_end(argsList);
 }
 
-void handle_template(va_list *argsList, char *input, unsigned int *cursor, char templateKey) {
+void handle_template(va_list *argsList, const char *input, unsigned int *cursor, char templateKey) {
     switch (templateKey) {
         case 'd':
             *va_arg(*argsList, int*) = next_int(input, cursor);
@@ -85,7 +83,7 @@ void handle_template(va_list *argsList, char *input, unsigned int *cursor, char 
     }
 }
 
-int next_int(char *input, unsigned int *cursor) {
+int next_int(const char *input, unsigned int *cursor) {
     char intStr[11];
     int counter = 0;
     for (unsigned long i = *cursor; i < strlen(input); i++) {
@@ -98,7 +96,7 @@ int next_int(char *input, unsigned int *cursor) {
     return atoi(intStr);
 }
 
-void next_string(char *input, unsigned int *cursor, char **result) {
+void next_string(const char *input, unsigned int *cursor, char **result) {
     unsigned int startIndex = *cursor;
     for (unsigned long i = *cursor; i < strlen(input); i++) {
         if (isdigit(input[i]) || isblank(input[i]) || iscntrl(input[i]) || isspace(input[i]))
@@ -110,12 +108,13 @@ void next_string(char *input, unsigned int *cursor, char **result) {
     memcpy(*result, input + startIndex, desiredStrSize);
 }
 
-bool next_bool(char *input, unsigned int *cursor) {
+bool next_bool(const char *input, unsigned int *cursor) {
     bool result = false;
     unsigned long size = strlen(input) - *cursor + 1;
     if (size >= 4) {
         char* substr = (char*)calloc(1, 5);
         memcpy(substr, input + *cursor, 4);
+        to_lower(&substr);
         if (strcmp(substr, "true") == 0) {
             *cursor = *cursor + 4;
             result = true;
@@ -124,6 +123,7 @@ bool next_bool(char *input, unsigned int *cursor) {
     } else if (size >= 5) {
         char* substr = (char*)calloc(1, 6);
         memcpy(substr, input + *cursor, 5);
+        to_lower(&substr);
         if (strcmp(substr, "false") == 0) {
             *cursor = *cursor + 5;
             result = false;
@@ -134,12 +134,8 @@ bool next_bool(char *input, unsigned int *cursor) {
     return result;
 }
 
-void read_all(FILE *stream, char **result) {
-    long lSize;
-    fseek( stream , 0L , SEEK_END);
-    lSize = ftell( stream );
-    rewind( stream );
-    *result = (char *)calloc( 1, lSize+1 );
-    fread( *result , lSize, 1 , stream);
-    fclose(stream);
+void to_lower(char** string) {
+    for (int i = 0; (*string)[i] != '\0'; i++) {
+        (*string)[i] = (char)tolower((*string)[i]);
+    }
 }
